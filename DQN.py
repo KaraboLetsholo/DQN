@@ -27,7 +27,7 @@ class DQN(nn.Module):
     
 class Agent():
     def __init__(self, gamma, epsilon, lr, input_dims, batch_size, n_actions,
-                  max_mem_size = 100_000, eps_end=0.01, eps_dec = 5e-4):
+                  max_mem_size = 100_000, eps_end=0.01, eps_dec = 5e-6):
         self.gamma = gamma
         self.epsilon = epsilon
         self.lr = lr
@@ -54,8 +54,8 @@ class Agent():
         self.state_memory[index] = state
         self.new_state_memory[index] = new_state
         self.reward_memory[index] = reward
-        self.action_memory = action
-        self.terminal_memory = done
+        self.action_memory[index] = action
+        self.terminal_memory[index] = done
 
         self.mem_counter += 1  
 
@@ -80,12 +80,11 @@ class Agent():
 
         batch_index = np.arange(self.batch_size, dtype=np.int32)
 
-        state_batch =T.tensor(self.state_memory[batch].to(self.Q_eval.device))
-        new_state_batch =T.tensor(self.new_state_memory[batch].to(self.Q_eval.device))
-        reward_batch =T.tensor(self.reward_memory[batch].to(self.Q_eval.device))
-        terminal_batch =T.tensor(self.terminal_memory[batch].to(self.Q_eval.device))
-
-        action_batch = self.action_memory[batch]
+        state_batch = T.tensor(self.state_memory[batch], dtype=T.float).to(self.Q_eval.device)
+        new_state_batch = T.tensor(self.new_state_memory[batch], dtype=T.float).to(self.Q_eval.device)
+        reward_batch = T.tensor(self.reward_memory[batch], dtype=T.float).to(self.Q_eval.device)
+        terminal_batch = T.tensor(self.terminal_memory[batch], dtype=T.bool).to(self.Q_eval.device)
+        action_batch = T.tensor(self.action_memory[batch], dtype=T.long).to(self.Q_eval.device)
 
         q_eval = self.Q_eval.forward(state_batch)[batch_index, action_batch]
         q_next = self.Q_eval.forward(new_state_batch)
